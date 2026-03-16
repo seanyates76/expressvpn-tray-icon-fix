@@ -94,7 +94,8 @@ Trust and verification:
 - live tray refresh is file-backed instead of patching vendor files in place
 - the current packaged launcher starts the ExpressVPN GUI under
   `XDG_SESSION_TYPE=X11`
-- Wayland behavior is not yet verified
+- KDE Plasma Wayland sessions are tested through that X11 compatibility path
+- native Wayland runtime is not currently verified
 - the runtime ships both style options:
   - `colored`
   - `monochrome`

@@ -19,14 +19,18 @@ Entries marked `Untested` are not currently claimed as supported.
 
 | ExpressVPN build | Distro | Desktop | Session | Install path | Startup | Tray override | Live theme switch | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Current development beta build | Arch Linux | KDE Plasma | X11 | Arch package | Tested | Tested | Tested | Current main development target |
+| Current development beta build | Arch Linux | KDE Plasma | Wayland | Arch package | Tested | Tested | Tested | Current main development target |
+
+Note: on the current tested ExpressVPN build, the app still runs through its
+X11 compatibility path in a Wayland session. Native Wayland runtime is not
+currently verified.
 
 ## Not Yet Verified
 
 | ExpressVPN build | Distro | Desktop | Session | Install path | Startup | Tray override | Live theme switch | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Beta build | Arch Linux | KDE Plasma | X11 | Arch package | Untested | Untested | Untested | Desktop session not yet tested directly |
 | Stable build | Arch Linux | KDE Plasma | X11 | Arch package | Untested | Untested | Untested | Highest priority next test |
-| Beta build | Arch Linux | KDE Plasma | Wayland | Arch package | Untested | Untested | Untested | Session behavior may differ |
 | Stable build | Arch Linux | KDE Plasma | Wayland | Arch package | Untested | Untested | Untested | Session + build both unverified |
 | Stable build | Debian-family | KDE Plasma | X11 | manual runtime | Untested | Untested | Untested | Path assumptions may need adjustment |
 | Stable build | Fedora-family | KDE Plasma | X11 | manual runtime | Untested | Untested | Untested | Path assumptions may need adjustment |
@@ -41,8 +45,8 @@ These are the main compatibility assumptions in the current runtime:
 - Tray state/resource naming still matches the current known states
 - System theme can be inferred from KDE/GTK config files
 - the packaged launcher explicitly sets `XDG_SESSION_TYPE=X11`
-- the current runtime path therefore expects X11 behavior
-- Wayland has not yet been verified for this release
+- current Wayland-session testing still uses the app's X11 compatibility path
+- native Wayland runtime remains unverified
 
 If any of those change, compatibility may drop from `Tested` to `Partial` or `Broken`.
 
