@@ -4,6 +4,7 @@ set -euo pipefail
 runtime_root="/usr/lib/expressvpn-tray-icon-fix"
 app_path="/opt/expressvpn/bin/expressvpn-client"
 integrate_helper_path="$runtime_root/bin/expressvpn-tray-icon-fix-integrate"
+launcher_argv0="/usr/bin/expressvpn-tray-icon-fix"
 config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
 cache_home="${XDG_CACHE_HOME:-$HOME/.cache}"
 settings_path="$config_home/expressvpn/clientsettings.json"
@@ -102,9 +103,133 @@ run_integration_action() {
   esac
 }
 
+list_matching_client_pids() {
+  local mode="$1"
+  local pid args
+
+  while read -r pid args; do
+    [[ -n "${pid:-}" && "$pid" != "$$" ]] || continue
+
+    case "$mode" in
+      wrapped)
+        case "$args" in
+          "$launcher_argv0"*)
+            printf '%s\n' "$pid"
+            ;;
+        esac
+        ;;
+      raw)
+        case "$args" in
+          "$app_path"*)
+            printf '%s\n' "$pid"
+            ;;
+        esac
+        ;;
+    esac
+  done < <(ps -u "$(id -u)" -o pid= -o args=)
+}
+
+wait_for_pids_to_exit() {
+  local pid
+  local countdown=50
+
+  while ((countdown > 0)); do
+    local any_alive=0
+    for pid in "$@"; do
+      if kill -0 "$pid" >/dev/null 2>&1; then
+        any_alive=1
+        break
+      fi
+    done
+
+    if [[ "$any_alive" -eq 0 ]]; then
+      return 0
+    fi
+
+    sleep 0.1
+    ((countdown--))
+  done
+
+  return 1
+}
+
+effective_app_args=()
+
+build_effective_app_args() {
+  effective_app_args=("${passthrough_args[@]}")
+  if [[ "$quiet" -eq 1 ]]; then
+    effective_app_args=(--quiet "${effective_app_args[@]}")
+  fi
+}
+
+launch_app_foreground() {
+  exec -a "$launcher_argv0" env -u SESSION_MANAGER XDG_SESSION_TYPE=X11 "$app_path" "${effective_app_args[@]}"
+}
+
+launch_app_background() {
+  mkdir -p "$(dirname "$log_path")"
+  nohup bash -lc 'exec -a "$0" env -u SESSION_MANAGER XDG_SESSION_TYPE=X11 "$1" "${@:2}"' \
+    "$launcher_argv0" "$app_path" "${effective_app_args[@]}" >"$log_path" 2>&1 &
+  if [[ "$quiet" -eq 0 ]]; then
+    printf 'Launched ExpressVPN Tray Icon Fix in background.\n'
+    printf 'Log: %s\n' "$log_path"
+  fi
+}
+
+tray_host_ready() {
+  if command -v busctl >/dev/null 2>&1; then
+    if busctl --user --list 2>/dev/null | grep -q 'StatusNotifierWatcher'; then
+      return 0
+    fi
+  fi
+
+  pgrep -u "$(id -u)" -x plasmashell >/dev/null 2>&1 &&
+    pgrep -u "$(id -u)" -f 'xembedsniproxy|snixembed' >/dev/null 2>&1
+}
+
+wait_for_tray_host() {
+  local attempts=8
+
+  sleep 1
+
+  while ((attempts > 0)); do
+    if tray_host_ready; then
+      return 0
+    fi
+
+    sleep 0.25
+    ((attempts--))
+  done
+
+  return 1
+}
+
+prepare_autostart_launch() {
+  local raw_pids=()
+  local wrapped_pids=()
+
+  wait_for_tray_host || true
+
+  mapfile -t wrapped_pids < <(list_matching_client_pids wrapped)
+  if ((${#wrapped_pids[@]} > 0)); then
+    exit 0
+  fi
+
+  mapfile -t raw_pids < <(list_matching_client_pids raw)
+  if ((${#raw_pids[@]} == 0)); then
+    return 0
+  fi
+
+  kill "${raw_pids[@]}" >/dev/null 2>&1 || true
+  if ! wait_for_pids_to_exit "${raw_pids[@]}"; then
+    exit 0
+  fi
+}
+
 foreground=0
 quiet=0
 persist_only=0
+autostart=0
 style_override=""
 integration_action=""
 passthrough_args=()
@@ -146,6 +271,10 @@ while (($#)); do
       foreground=1
       ;;
     --quiet)
+      quiet=1
+      ;;
+    --autostart)
+      autostart=1
       quiet=1
       ;;
     -h|--help)
@@ -227,13 +356,14 @@ if [[ -n "${EXPRESSVPN_TRAY_SYSTEM_THEME_FILE:-}" ]]; then
 fi
 export LD_PRELOAD="$preload_path${LD_PRELOAD:+:${LD_PRELOAD}}"
 
-if [[ "$foreground" -eq 1 || ! -t 1 ]]; then
-  exec env XDG_SESSION_TYPE=X11 "$app_path" "${passthrough_args[@]}"
+if [[ "$autostart" -eq 1 ]]; then
+  prepare_autostart_launch
 fi
 
-mkdir -p "$(dirname "$log_path")"
-nohup env XDG_SESSION_TYPE=X11 "$app_path" "${passthrough_args[@]}" >"$log_path" 2>&1 &
-if [[ "$quiet" -eq 0 ]]; then
-  printf 'Launched ExpressVPN Tray Icon Fix in background.\n'
-  printf 'Log: %s\n' "$log_path"
+build_effective_app_args
+
+if [[ "$foreground" -eq 1 || ! -t 1 ]]; then
+  launch_app_foreground
 fi
+
+launch_app_background

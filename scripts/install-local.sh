@@ -105,7 +105,7 @@ app_mtime="$(stat -c '%Y' "$app_path")"
   printf '  export EXPRESSVPN_TRAY_SYSTEM_THEME_FILE="$system_theme_path"\n'
   printf 'fi\n'
   printf 'export LD_PRELOAD=%q"${LD_PRELOAD:+:${LD_PRELOAD}}"\n' "$preload_path"
-  printf 'exec env XDG_SESSION_TYPE=X11 %q "$@"\n' "$app_path"
+  printf 'exec -a %q env -u SESSION_MANAGER XDG_SESSION_TYPE=X11 %q "$@"\n' "$wrapper_path" "$app_path"
 } > "$wrapper_path"
 chmod 0755 "$wrapper_path"
 
@@ -115,6 +115,7 @@ chmod 0755 "$wrapper_path"
   printf 'Name=ExpressVPN\n'
   printf 'Comment=ExpressVPN VPN client with tray override\n'
   printf 'Path=/opt/expressvpn/bin/\n'
+  printf 'TryExec=%q\n' "$app_path"
   printf 'Exec=%q %%u\n' "$wrapper_path"
   printf 'Icon=expressvpn\n'
   printf 'Terminal=false\n'
