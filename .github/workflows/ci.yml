@@ -19,6 +19,11 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Prepare builder user
+        run: |
+          useradd -m builder
+          chown -R builder:builder "$GITHUB_WORKSPACE"
+
       - name: Syntax checks
         shell: bash
         run: |
@@ -29,8 +34,8 @@ jobs:
 
       - name: Regenerate SRCINFO
         shell: bash
-        run: make srcinfo
+        run: runuser -u builder -- make srcinfo
 
       - name: Build Arch package
         shell: bash
-        run: make package-arch
+        run: runuser -u builder -- make package-arch

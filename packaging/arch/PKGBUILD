@@ -3,7 +3,9 @@ pkgver=0.1.0
 pkgrel=1
 pkgdesc='Improved ExpressVPN tray icons with live light/dark theme switching'
 arch=('x86_64')
-# Local-tree packaging only. Replace source=() and sha256sums=() before AUR publication.
+# Local-tree package for development and first public release artifacts.
+# Replace source=() and sha256sums=() before AUR publication.
+# See RELEASING.md for release and AUR conversion steps.
 url='https://github.com/seanyates76/expressvpn-tray-icon-fix'
 license=('MIT')
 depends=('bash')
@@ -34,7 +36,7 @@ package() {
 
   install -Dm755 \
     packaging/bin/expressvpn-tray-icon-fix-integrate \
-    "$pkgdir/usr/bin/expressvpn-tray-icon-fix-integrate"
+    "$runtime_root/bin/expressvpn-tray-icon-fix-integrate"
 
   install -Dm644 \
     packaging/desktop/expressvpn-tray-icon-fix.desktop \
@@ -45,20 +47,12 @@ package() {
     "$pkgdir/usr/share/man/man1/expressvpn-tray-icon-fix.1"
 
   install -Dm644 \
-    packaging/man/expressvpn-tray-icon-fix-integrate.1 \
-    "$pkgdir/usr/share/man/man1/expressvpn-tray-icon-fix-integrate.1"
-
-  install -Dm644 \
     README.md \
     "$pkgdir/usr/share/doc/$pkgname/README.md"
 
   install -Dm644 \
-    docs/variant-options.md \
-    "$pkgdir/usr/share/doc/$pkgname/variant-options.md"
-
-  install -Dm644 \
-    packaging/arch/README.md \
-    "$pkgdir/usr/share/doc/$pkgname/arch-packaging.md"
+    docs/TRANSPARENCY.md \
+    "$pkgdir/usr/share/doc/$pkgname/transparency.md"
 
   install -Dm644 \
     LICENSE \

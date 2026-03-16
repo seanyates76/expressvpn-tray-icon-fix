@@ -1,0 +1,44 @@
+name: Release Arch Package
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-release-package:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+
+    steps:
+      - name: Install build dependencies
+        run: pacman -Sy --noconfirm --needed base-devel git imagemagick pkgconf qt6-base qt6-declarative
+
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Prepare builder user
+        run: |
+          useradd -m builder
+          chown -R builder:builder "$GITHUB_WORKSPACE"
+
+      - name: Build package
+        shell: bash
+        run: runuser -u builder -- make package-arch
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: expressvpn-tray-icon-fix-arch-package
+          path: packaging/arch/*.pkg.tar.zst
+
+      - name: Attach package to GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: packaging/arch/*.pkg.tar.zst

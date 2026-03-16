@@ -3,6 +3,7 @@ set -euo pipefail
 
 runtime_root="/usr/lib/expressvpn-tray-icon-fix"
 app_path="/opt/expressvpn/bin/expressvpn-client"
+integrate_helper_path="$runtime_root/bin/expressvpn-tray-icon-fix-integrate"
 config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
 cache_home="${XDG_CACHE_HOME:-$HOME/.cache}"
 settings_path="$config_home/expressvpn/clientsettings.json"
@@ -18,6 +19,10 @@ Options:
   --style STYLE        Persist STYLE and launch. STYLE: colored | monochrome
   --set-style STYLE    Persist STYLE and exit.
   --print-style        Print the effective persisted/default style and exit.
+  --repair-integration Recreate the managed ExpressVPN launcher integration.
+  --disable-integration
+                       Remove the managed ExpressVPN launcher integration.
+  --integration-status Print current integration status.
   --foreground         Launch in the current terminal instead of backgrounding.
   -h, --help           Show this help.
 EOF
@@ -72,9 +77,36 @@ select_style() {
   esac
 }
 
+run_integration_action() {
+  local action="$1"
+
+  if [[ ! -x "$integrate_helper_path" ]]; then
+    echo "Missing integration helper: $integrate_helper_path" >&2
+    exit 1
+  fi
+
+  case "$action" in
+    repair)
+      exec "$integrate_helper_path" enable
+      ;;
+    disable)
+      exec "$integrate_helper_path" disable
+      ;;
+    status)
+      exec "$integrate_helper_path" status
+      ;;
+    *)
+      echo "Unknown integration action: $action" >&2
+      exit 1
+      ;;
+  esac
+}
+
 foreground=0
+quiet=0
 persist_only=0
 style_override=""
+integration_action=""
 passthrough_args=()
 
 while (($#)); do
@@ -101,8 +133,20 @@ while (($#)); do
       select_style
       exit 0
       ;;
+    --repair-integration|--reinstall-integration)
+      integration_action="repair"
+      ;;
+    --disable-integration)
+      integration_action="disable"
+      ;;
+    --integration-status)
+      integration_action="status"
+      ;;
     --foreground)
       foreground=1
+      ;;
+    --quiet)
+      quiet=1
       ;;
     -h|--help)
       print_usage
@@ -135,6 +179,10 @@ fi
 
 if [[ "$persist_only" -eq 1 ]]; then
   exit 0
+fi
+
+if [[ -n "$integration_action" ]]; then
+  run_integration_action "$integration_action"
 fi
 
 style="$(select_style)"
@@ -185,5 +233,7 @@ fi
 
 mkdir -p "$(dirname "$log_path")"
 nohup env XDG_SESSION_TYPE=X11 "$app_path" "${passthrough_args[@]}" >"$log_path" 2>&1 &
-printf 'Launched ExpressVPN Tray Icon Fix in background.\n'
-printf 'Log: %s\n' "$log_path"
+if [[ "$quiet" -eq 0 ]]; then
+  printf 'Launched ExpressVPN Tray Icon Fix in background.\n'
+  printf 'Log: %s\n' "$log_path"
+fi

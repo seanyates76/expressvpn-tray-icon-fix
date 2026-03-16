@@ -9,8 +9,8 @@ current_target_user() {
 auto_integrate_if_possible() {
   user=""
   user="$(current_target_user || true)"
-  if [ -n "$user" ] && [ -x /usr/bin/expressvpn-tray-icon-fix-integrate ]; then
-    /usr/bin/expressvpn-tray-icon-fix-integrate enable "$user" >/dev/null 2>&1 || true
+  if [ -n "$user" ] && [ -x /usr/lib/expressvpn-tray-icon-fix/bin/expressvpn-tray-icon-fix-integrate ]; then
+    /usr/lib/expressvpn-tray-icon-fix/bin/expressvpn-tray-icon-fix-integrate enable "$user" >/dev/null 2>&1 || true
     printf '%s\n' "$user"
   fi
 }
@@ -18,8 +18,8 @@ auto_integrate_if_possible() {
 disable_if_possible() {
   user=""
   user="$(current_target_user || true)"
-  if [ -n "$user" ] && [ -x /usr/bin/expressvpn-tray-icon-fix-integrate ]; then
-    /usr/bin/expressvpn-tray-icon-fix-integrate disable "$user" >/dev/null 2>&1 || true
+  if [ -n "$user" ] && [ -x /usr/lib/expressvpn-tray-icon-fix/bin/expressvpn-tray-icon-fix-integrate ]; then
+    /usr/lib/expressvpn-tray-icon-fix/bin/expressvpn-tray-icon-fix-integrate disable "$user" >/dev/null 2>&1 || true
   fi
 }
 
@@ -35,15 +35,9 @@ Launch it from:
 Or run:
   expressvpn-tray-icon-fix
 
-Main launcher help:
-  expressvpn-tray-icon-fix -h
-
 Set style with:
   expressvpn-tray-icon-fix --set-style colored
   expressvpn-tray-icon-fix --set-style monochrome
-
-Launch in foreground for debugging:
-  expressvpn-tray-icon-fix --foreground
 
 Accepted values:
   colored
@@ -62,8 +56,8 @@ EOF
     cat <<'EOF'
 
 Automatic per-user integration was not applied during install.
-To enable the standard ExpressVPN launcher path for your user:
-  expressvpn-tray-icon-fix-integrate enable
+To repair the standard ExpressVPN launcher path for your user:
+  expressvpn-tray-icon-fix --repair-integration
 EOF
   fi
 }

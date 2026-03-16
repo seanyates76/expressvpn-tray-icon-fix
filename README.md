@@ -1,159 +1,92 @@
 # ExpressVPN Tray Icon Fix
 
-Package name: `expressvpn-tray-icon-fix`
+This project improves ExpressVPN's Linux tray icons. It ships replacement tray
+assets plus a runtime hook that keeps the tray icon in sync with the current
+light or dark system theme.
 
-GitHub:
+Current scope:
 
-- `https://github.com/seanyates76/expressvpn-tray-icon-fix`
+- first public release
+- Arch package first
+- Linux runtime mod
+- compatibility tracked by tested combinations only
 
-This project is a Linux mod for ExpressVPN's tray icons. It replaces the embedded
-Qt tray resources with improved themed assets and keeps the tray icon switching
-live with the current light/dark system theme.
+## Install
 
-For end users, the package path is the primary path now. The local `make install`
-flow is only for development.
+### Arch Linux
 
-## Current Runtime Model
+Preferred end-user path:
 
-- the preload hook follows the system theme and live-switches the tray icon
-- live tray refresh is file-backed, not just `:/img/tray/...` resource-backed
-- the runtime ships both style options:
-  - `colored`
-  - `monochrome`
+1. Download the latest `expressvpn-tray-icon-fix-*.pkg.tar.zst` from GitHub Releases.
+2. Install it with:
 
-Canonical asset sets live under:
+```bash
+sudo pacman -U ./expressvpn-tray-icon-fix-0.1.0-1-x86_64.pkg.tar.zst
+```
 
-- `resources/themed/img/tray-dark-colored`
-- `resources/themed/img/tray-dark-monochrome`
-- `resources/themed/img/tray-light-colored`
-- `resources/themed/img/tray-light-monochrome`
+What the package does:
 
-## Standard Arch Install
+- installs the runtime under `/usr/lib/expressvpn-tray-icon-fix`
+- installs the launcher command `expressvpn-tray-icon-fix`
+- automatically hooks the normal `ExpressVPN` launcher path for the installing user
+- keeps menu search results under `ExpressVPN`, not a second helper app name
 
-For a normal package-manager install from this working tree:
+Manual page:
+
+- `man expressvpn-tray-icon-fix`
+
+## Desktop Integration Model
+
+- the package installs its own desktop entry at
+  `/usr/share/applications/expressvpn-tray-icon-fix.desktop`
+- package integration then manages per-user overrides at
+  `~/.local/share/applications/expressvpn.desktop` and
+  `~/.config/autostart/expressvpn-client.desktop`
+- the user-visible launcher remains `ExpressVPN` in menu search
+
+### Build Locally
+
+For local packaging from a working tree:
 
 ```bash
 cd packaging/arch
 makepkg -fsi
 ```
 
-That builds `expressvpn-tray-icon-fix` and installs it with `pacman`.
-
-When installed through `sudo pacman`, the package also attempts to enable
-itself immediately for the invoking user by creating managed user-local
-overrides for:
-
-- `~/.local/share/applications/expressvpn.desktop`
-- `~/.config/autostart/expressvpn-client.desktop`
-
-So after install, the normal `ExpressVPN` launcher path already uses the mod.
-The packaged `expressvpn-tray-icon-fix.desktop` entry is hidden from menus so
-search results stay under `ExpressVPN`.
-
-If you already built the package archive, install it with:
+Or from the repo root:
 
 ```bash
-sudo pacman -U ./expressvpn-tray-icon-fix-0.1.0-1-x86_64.pkg.tar.zst
-```
-
-The installed command is:
-
-- `expressvpn-tray-icon-fix`
-
-The integration helper is:
-
-- `expressvpn-tray-icon-fix-integrate`
-
-Manual pages:
-
-- `man expressvpn-tray-icon-fix`
-- `man expressvpn-tray-icon-fix-integrate`
-
-## Local Dev Install
-
-The custom `make install` flow is only for working-tree development and testing.
-
-```bash
-make install STYLE=colored
-```
-
-Or:
-
-```bash
-make install STYLE=monochrome
-```
-
-Remove the local dev install with:
-
-```bash
-make uninstall
-```
-
-## Package Runtime Staging
-
-Build the package runtime layout locally:
-
-```bash
-make stage-package-runtime
-```
-
-That stages a package-style runtime tree at:
-
-- `build/package-runtime/expressvpn-tray-icon-fix`
-
-The staged runtime includes:
-
-- `lib/libexpressvpn-tray-override.so`
-- `styles/colored/...`
-- `styles/monochrome/...`
-
-## Arch Package
-
-An Arch-style package skeleton lives in:
-
-- `packaging/arch/PKGBUILD`
-- `packaging/arch/README.md`
-
-For local package builds from this working tree:
-
-```bash
-cd packaging/arch
-makepkg -f
-```
-
-The package installs:
-
-- `/usr/bin/expressvpn-tray-icon-fix`
-- `/usr/share/applications/expressvpn-tray-icon-fix.desktop`
-- `/usr/lib/expressvpn-tray-icon-fix/...`
-
-So the package manager can install it directly without a separate post-install
-"copy this into ~/.local" step.
-
-`.SRCINFO` is included under:
-
-- `packaging/arch/.SRCINFO`
-
-The current `PKGBUILD` is suitable for local Arch packaging from this tree. The
-remaining AUR work is converting it from a local-tree package to a package that
-builds from real GitHub sources.
-
-That upstream repo URL is now reserved here:
-
-- `https://github.com/seanyates76/expressvpn-tray-icon-fix`
-
-The remaining AUR work is switching the package from local-tree build inputs to
-real GitHub sources or a `-git` source package.
-
-There are helper targets at the repo root for this:
-
-```bash
-make package-arch
 make package-arch-install
-make srcinfo
 ```
 
-## Style Selection
+### Other Distros
+
+Not packaged yet.
+
+The runtime mod may work on other Linux distros if the installed ExpressVPN GUI
+matches the assumptions in `docs/COMPATIBILITY.md`, but only tested
+combinations are claimed and only Arch packaging is provided right now.
+
+Compatibility tracking:
+
+- `docs/COMPATIBILITY.md`
+
+Trust and verification:
+
+- `docs/TRANSPARENCY.md`
+
+## Runtime Model
+
+- the preload hook follows the system theme and live-switches the tray icon
+- live tray refresh is file-backed instead of patching vendor files in place
+- the current packaged launcher starts the ExpressVPN GUI under
+  `XDG_SESSION_TYPE=X11`
+- Wayland behavior is not yet verified
+- the runtime ships both style options:
+  - `colored`
+  - `monochrome`
+
+## Styles
 
 The packaged launcher defaults to `colored`.
 
@@ -173,25 +106,39 @@ Accepted values:
 - `colored`
 - `monochrome`
 
-Or launch with:
+If the standard `ExpressVPN` launcher ever needs to be recreated, run:
 
 ```bash
-EXPRESSVPN_TRAY_ICON_FIX_STYLE=monochrome expressvpn-tray-icon-fix
+expressvpn-tray-icon-fix --repair-integration
 ```
 
-By default, the packaged launcher backgrounds the GUI app when run from a
-terminal. To keep it attached for debugging:
+## Development
+
+The custom `make install` flow is only for working-tree development and testing.
 
 ```bash
-expressvpn-tray-icon-fix --foreground
+make install STYLE=colored
+make install STYLE=monochrome
+make uninstall
 ```
 
-Short help is available with:
+Helper targets:
 
-```bash
-expressvpn-tray-icon-fix -h
-expressvpn-tray-icon-fix-integrate -h
-```
+- `make package-arch`
+- `make package-arch-install`
+- `make srcinfo`
+- `make extract`
+
+Arch packaging files:
+
+- `packaging/arch/PKGBUILD`
+- `packaging/arch/.SRCINFO`
+
+Developer-only launcher/debug options:
+
+- `expressvpn-tray-icon-fix -h`
+- `expressvpn-tray-icon-fix --foreground`
+- `EXPRESSVPN_TRAY_ICON_FIX_STYLE=monochrome expressvpn-tray-icon-fix`
 
 ## Asset Workflow
 
@@ -201,13 +148,15 @@ Refresh the themed asset sets with:
 ./scripts/build_tray_variants.sh
 ```
 
-The dark and light tray resource names used by ExpressVPN are documented in:
+The shipped tray assets live under:
 
-- `docs/resource-map.md`
+- `resources/themed/img/`
 
 ## Extraction
 
-The embedded tray PNGs can still be re-extracted from the ExpressVPN client with:
+This is dev-only tooling for maintainers and forks.
+
+The embedded tray PNGs can be re-extracted from the ExpressVPN client with:
 
 ```bash
 make extract

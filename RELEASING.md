@@ -1,36 +1,39 @@
-# Releasing
+# Release Notes For Maintainers
 
-This project is published at:
+This file is for maintainers preparing public source or release artifacts.
+
+Target upstream repo:
 
 - `https://github.com/seanyates76/expressvpn-tray-icon-fix`
 
 ## Current State
 
 The current `packaging/arch/PKGBUILD` is still a local-tree package. That is
-good for development and local testing, but not enough for a proper AUR release
-package.
+good for development, local testing, and first public Arch release artifacts,
+but not enough for a proper AUR release package.
 
 ## Release Package Path
 
-When you are ready to publish a release package:
+When the repo is public and you are ready to publish the first public release:
 
 1. Push the current tree to GitHub.
 2. Create a tag such as `v0.1.0`.
-3. Decide whether the AUR package should build from:
+3. Let GitHub Actions build and attach the Arch package artifact to the release.
+4. Decide whether the AUR package should build from:
    - a GitHub release tarball, or
    - a `-git` source package
-4. Update `packaging/arch/PKGBUILD`:
+5. Update `packaging/arch/PKGBUILD`:
    - set `url` to the real GitHub repo
    - replace `source=()` with the release tarball or VCS source
    - replace `sha256sums=()` with real checksums, or `SKIP` for a VCS package
    - make `build()` and `package()` operate from the extracted source tree
-5. Regenerate `.SRCINFO`:
+6. Regenerate `.SRCINFO`:
 
 ```bash
 make srcinfo
 ```
 
-6. Rebuild and test:
+7. Rebuild and test:
 
 ```bash
 make package-arch

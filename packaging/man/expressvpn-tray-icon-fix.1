@@ -6,6 +6,9 @@ expressvpn-tray-icon-fix \- launch ExpressVPN with improved live-switching tray 
 [\fB--style\fR \fISTYLE\fR]
 [\fB--set-style\fR \fISTYLE\fR]
 [\fB--print-style\fR]
+[\fB--repair-integration\fR]
+[\fB--disable-integration\fR]
+[\fB--integration-status\fR]
 [\fB--foreground\fR]
 [\fB-h\fR|\fB--help\fR]
 [\fB--\fR [\fIEXPRESSVPN_ARGS\fR ...]]
@@ -15,9 +18,13 @@ launches the ExpressVPN GUI client with a preload hook and themed tray icon
 assets. The tray icon follows the current system light or dark theme and can be
 used with colored or monochrome status indicators.
 .PP
-When the package is installed through pacman, it attempts to enable itself for
-the invoking user by creating user-local overrides for the standard
-\fBexpressvpn.desktop\fR launcher and the ExpressVPN autostart entry.
+For the current release, the launcher runs the GUI under
+\fBXDG_SESSION_TYPE=X11\fR semantics.
+.PP
+When the package is installed through pacman, it installs its own desktop entry
+at \fB/usr/share/applications/expressvpn-tray-icon-fix.desktop\fR and attempts
+to enable itself for the invoking user by creating user-local overrides for the
+standard \fBexpressvpn.desktop\fR launcher and the ExpressVPN autostart entry.
 .SH OPTIONS
 .TP
 .B --style STYLE
@@ -30,6 +37,15 @@ Persist \fISTYLE\fR and exit without launching ExpressVPN.
 .B --print-style
 Print the effective style and exit.
 .TP
+.B --repair-integration
+Recreate the managed per-user ExpressVPN launcher and autostart integration.
+.TP
+.B --disable-integration
+Remove the managed per-user ExpressVPN launcher and autostart integration.
+.TP
+.B --integration-status
+Print the current integration status for the active user.
+.TP
 .B --foreground
 Run ExpressVPN attached to the current terminal instead of backgrounding it.
 .TP
@@ -40,10 +56,11 @@ Show a short usage message and exit.
 .I ~/.config/expressvpn-tray-icon-fix/style
 Persisted style choice for the current user.
 .TP
+.I /usr/share/applications/expressvpn-tray-icon-fix.desktop
+Package-owned desktop entry used by the integration flow.
+.TP
 .I ~/.local/share/applications/expressvpn.desktop
 Managed desktop override installed by package integration.
 .TP
 .I ~/.config/autostart/expressvpn-client.desktop
 Managed autostart override installed by package integration.
-.SH SEE ALSO
-.BR expressvpn-tray-icon-fix-integrate (1)

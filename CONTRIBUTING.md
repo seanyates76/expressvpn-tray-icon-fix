@@ -7,7 +7,7 @@ Thanks for contributing to `expressvpn-tray-icon-fix`.
 - keep the packaged install path working first
 - keep the canonical tray assets clean and correctly named
 - keep live light/dark switching reliable
-- keep Arch packaging and docs in sync
+- keep README, transparency, compatibility, and package behavior in sync
 
 ## Local Checks
 
