@@ -17,7 +17,7 @@ jobs:
         run: pacman -Sy --noconfirm --needed base-devel git imagemagick pkgconf qt6-base qt6-declarative
 
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Prepare builder user
         run: |

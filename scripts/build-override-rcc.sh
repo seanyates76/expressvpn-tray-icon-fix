@@ -45,10 +45,24 @@ case "$mode" in
     ;;
 esac
 
-if ! command -v rcc >/dev/null 2>&1; then
+find_rcc() {
+  local candidate
+
+  for candidate in \
+    "$(command -v rcc 2>/dev/null || true)" \
+    "$(command -v rcc6 2>/dev/null || true)" \
+    /usr/lib/qt6/bin/rcc \
+    /usr/lib/qt6/libexec/rcc; do
+    [[ -n "$candidate" && -x "$candidate" ]] || continue
+    printf '%s\n' "$candidate"
+    return 0
+  done
+
   echo "Missing required command: rcc" >&2
   exit 1
-fi
+}
+
+rcc_bin="$(find_rcc)"
 
 out_dir="$(dirname "$out_rcc")"
 qrc_path="$out_dir/override.qrc"
@@ -115,6 +129,6 @@ emit_locked_aliases() {
   printf '</RCC>\n'
 } > "$qrc_path"
 
-rcc --binary --output "$out_rcc" "$qrc_path"
+"$rcc_bin" --binary --output "$out_rcc" "$qrc_path"
 
 echo "$out_rcc"
