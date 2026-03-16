@@ -51,6 +51,7 @@ find_rcc() {
   for candidate in \
     "$(command -v rcc 2>/dev/null || true)" \
     "$(command -v rcc6 2>/dev/null || true)" \
+    /usr/lib/qt6/rcc \
     /usr/lib/qt6/bin/rcc \
     /usr/lib/qt6/libexec/rcc; do
     [[ -n "$candidate" && -x "$candidate" ]] || continue
