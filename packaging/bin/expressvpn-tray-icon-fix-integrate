@@ -1,0 +1,230 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+managed_key="X-ExpressVPN-Tray-Icon-Fix-Managed=true"
+
+print_usage() {
+  cat <<'EOF'
+Usage:
+  expressvpn-tray-icon-fix-integrate enable [USER]
+  expressvpn-tray-icon-fix-integrate disable [USER]
+  expressvpn-tray-icon-fix-integrate status [USER]
+  expressvpn-tray-icon-fix-integrate --help
+
+This command manages user-local desktop and autostart overrides so the standard
+ExpressVPN launcher uses expressvpn-tray-icon-fix automatically.
+EOF
+}
+
+resolve_target() {
+  local requested_user="${1:-${SUDO_USER:-${USER:-}}}"
+  if [[ -z "$requested_user" ]]; then
+    echo "No target user provided." >&2
+    exit 1
+  fi
+
+  if ! id "$requested_user" >/dev/null 2>&1; then
+    echo "Unknown user: $requested_user" >&2
+    exit 1
+  fi
+
+  target_user="$requested_user"
+  target_uid="$(id -u "$target_user")"
+  target_gid="$(id -g "$target_user")"
+  target_home="$(getent passwd "$target_user" | cut -d: -f6)"
+  if [[ -z "$target_home" || ! -d "$target_home" ]]; then
+    echo "Could not resolve home for user: $target_user" >&2
+    exit 1
+  fi
+
+  data_home="$target_home/.local/share"
+  config_home="$target_home/.config"
+  state_root="$data_home/expressvpn-tray-icon-fix/integration"
+  desktop_dir="$data_home/applications"
+  autostart_dir="$config_home/autostart"
+  desktop_override="$desktop_dir/expressvpn.desktop"
+  autostart_override="$autostart_dir/expressvpn-client.desktop"
+  desktop_backup="$state_root/expressvpn.desktop.backup"
+  autostart_backup="$state_root/expressvpn-client.desktop.backup"
+}
+
+ensure_parent() {
+  local path="$1"
+  install -d -m 755 -o "$target_uid" -g "$target_gid" "$(dirname "$path")"
+}
+
+ensure_state_root() {
+  install -d -m 755 -o "$target_uid" -g "$target_gid" "$state_root"
+}
+
+is_managed_file() {
+  local path="$1"
+  [[ -f "$path" ]] && grep -qxF "$managed_key" "$path"
+}
+
+backup_if_needed() {
+  local src="$1"
+  local backup="$2"
+  if [[ -f "$src" && ! -f "$backup" ]] && ! is_managed_file "$src"; then
+    ensure_state_root
+    cp "$src" "$backup"
+    chown "$target_uid:$target_gid" "$backup"
+  fi
+}
+
+write_owned_file() {
+  local dest="$1"
+  local tmp
+  ensure_parent "$dest"
+  tmp="$(mktemp)"
+  cat >"$tmp"
+  install -m 644 -o "$target_uid" -g "$target_gid" "$tmp" "$dest"
+  rm -f "$tmp"
+}
+
+restore_or_remove() {
+  local dest="$1"
+  local backup="$2"
+  if [[ -f "$backup" ]]; then
+    ensure_parent "$dest"
+    install -m 644 -o "$target_uid" -g "$target_gid" "$backup" "$dest"
+    rm -f "$backup"
+  elif is_managed_file "$dest"; then
+    rm -f "$dest"
+  fi
+}
+
+refresh_user_desktop_state() {
+  if [[ "$(id -u)" -eq 0 ]]; then
+    if command -v runuser >/dev/null 2>&1; then
+      runuser -u "$target_user" -- env HOME="$target_home" \
+        XDG_DATA_HOME="$target_home/.local/share" \
+        XDG_CONFIG_HOME="$target_home/.config" \
+        bash -lc '
+          if command -v update-desktop-database >/dev/null 2>&1; then
+            update-desktop-database "$HOME/.local/share/applications" >/dev/null 2>&1 || true
+          fi
+          if command -v kbuildsycoca6 >/dev/null 2>&1; then
+            kbuildsycoca6 >/dev/null 2>&1 || true
+          elif command -v kbuildsycoca5 >/dev/null 2>&1; then
+            kbuildsycoca5 >/dev/null 2>&1 || true
+          fi
+        ' >/dev/null 2>&1 || true
+    fi
+    return 0
+  fi
+
+  if command -v update-desktop-database >/dev/null 2>&1; then
+    update-desktop-database "$desktop_dir" >/dev/null 2>&1 || true
+  fi
+  if command -v kbuildsycoca6 >/dev/null 2>&1; then
+    kbuildsycoca6 >/dev/null 2>&1 || true
+  elif command -v kbuildsycoca5 >/dev/null 2>&1; then
+    kbuildsycoca5 >/dev/null 2>&1 || true
+  fi
+}
+
+enable_integration() {
+  backup_if_needed "$desktop_override" "$desktop_backup"
+  backup_if_needed "$autostart_override" "$autostart_backup"
+
+  write_owned_file "$desktop_override" <<EOF
+[Desktop Entry]
+Type=Application
+Name=ExpressVPN
+Comment=ExpressVPN VPN client
+Path=/opt/expressvpn/bin/
+Exec=/usr/bin/expressvpn-tray-icon-fix %u
+Icon=expressvpn
+Terminal=false
+Categories=Network
+StartupWMClass=expressvpn-client
+MimeType=x-scheme-handler/expressvpn
+Keywords=ExpressVPN;VPN;Network;Privacy;
+Actions=Colored;Monochrome;
+$managed_key
+
+[Desktop Action Colored]
+Name=Launch With Colored Indicators
+Exec=/usr/bin/expressvpn-tray-icon-fix --style colored %u
+
+[Desktop Action Monochrome]
+Name=Launch With Monochrome Indicators
+Exec=/usr/bin/expressvpn-tray-icon-fix --style monochrome %u
+EOF
+
+  write_owned_file "$autostart_override" <<EOF
+[Desktop Entry]
+Type=Application
+Name=ExpressVPN
+Comment=ExpressVPN VPN client
+Path=/opt/expressvpn/bin/
+Exec=/usr/bin/expressvpn-tray-icon-fix --quiet
+Icon=expressvpn
+Terminal=false
+Categories=Network
+StartupWMClass=expressvpn-client
+$managed_key
+EOF
+
+  refresh_user_desktop_state
+  printf 'Enabled ExpressVPN tray override integration for %s\n' "$target_user"
+}
+
+disable_integration() {
+  restore_or_remove "$desktop_override" "$desktop_backup"
+  restore_or_remove "$autostart_override" "$autostart_backup"
+  rmdir "$state_root" >/dev/null 2>&1 || true
+  refresh_user_desktop_state
+  printf 'Disabled ExpressVPN tray override integration for %s\n' "$target_user"
+}
+
+status_integration() {
+  local desktop_status="absent"
+  local autostart_status="absent"
+
+  if is_managed_file "$desktop_override"; then
+    desktop_status="managed"
+  elif [[ -f "$desktop_override" ]]; then
+    desktop_status="custom"
+  fi
+
+  if is_managed_file "$autostart_override"; then
+    autostart_status="managed"
+  elif [[ -f "$autostart_override" ]]; then
+    autostart_status="custom"
+  fi
+
+  printf 'user=%s\n' "$target_user"
+  printf 'desktop=%s\n' "$desktop_status"
+  printf 'autostart=%s\n' "$autostart_status"
+}
+
+action="${1:-}"
+case "$action" in
+  enable|disable|status)
+    shift
+    resolve_target "${1:-}"
+    ;;
+  --help|-h|'')
+    print_usage
+    exit 0
+    ;;
+  *)
+    echo "Unknown action: $action" >&2
+    print_usage >&2
+    exit 1
+    ;;
+esac
+
+case "$action" in
+  enable)
+    enable_integration
+    ;;
+  disable)
+    disable_integration
+    ;;
+  status)
+    status_integration
+    ;;
+esac

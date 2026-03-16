@@ -1,0 +1,16 @@
+pkgbase = expressvpn-tray-icon-fix
+	pkgdesc = Improved ExpressVPN tray icons with live light/dark theme switching
+	pkgver = 0.1.0
+	pkgrel = 1
+	url = https://github.com/seanyates76/expressvpn-tray-icon-fix
+	install = expressvpn-tray-icon-fix.install
+	arch = x86_64
+	license = MIT
+	makedepends = imagemagick
+	makedepends = qt6-base
+	makedepends = qt6-declarative
+	depends = bash
+	optdepends = expressvpn: target VPN client binary at /opt/expressvpn/bin/expressvpn-client
+	options = !debug
+
+pkgname = expressvpn-tray-icon-fix

@@ -1,0 +1,48 @@
+.TH EXPRESSVPN-TRAY-ICON-FIX-INTEGRATE 1 "2026-03-15" "expressvpn-tray-icon-fix 0.1.0" "User Commands"
+.SH NAME
+expressvpn-tray-icon-fix-integrate \- manage per-user ExpressVPN launcher integration
+.SH SYNOPSIS
+.B expressvpn-tray-icon-fix-integrate
+\fBenable\fR [\fIUSER\fR]
+.br
+.B expressvpn-tray-icon-fix-integrate
+\fBdisable\fR [\fIUSER\fR]
+.br
+.B expressvpn-tray-icon-fix-integrate
+\fBstatus\fR [\fIUSER\fR]
+.br
+.B expressvpn-tray-icon-fix-integrate
+[\fB-h\fR|\fB--help\fR]
+.SH DESCRIPTION
+.B expressvpn-tray-icon-fix-integrate
+creates or removes managed user-local overrides so the standard ExpressVPN
+desktop launcher and autostart entry use
+.BR expressvpn-tray-icon-fix (1).
+.PP
+It is normally invoked automatically by the package install script, but it can
+also be used manually to repair or inspect integration state.
+.SH COMMANDS
+.TP
+.B enable [USER]
+Create managed overrides for the target user.
+.TP
+.B disable [USER]
+Remove managed overrides for the target user and restore backups when available.
+.TP
+.B status [USER]
+Print integration status for the target user.
+.TP
+.B -h, --help
+Show a short usage message and exit.
+.SH FILES
+.TP
+.I ~/.local/share/applications/expressvpn.desktop
+Managed desktop override for the standard ExpressVPN launcher.
+.TP
+.I ~/.config/autostart/expressvpn-client.desktop
+Managed autostart override for ExpressVPN.
+.TP
+.I ~/.local/share/expressvpn-tray-icon-fix/integration/
+Backup and integration state for managed overrides.
+.SH SEE ALSO
+.BR expressvpn-tray-icon-fix (1)

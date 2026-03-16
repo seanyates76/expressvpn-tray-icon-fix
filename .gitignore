@@ -1,0 +1,8 @@
+build/
+packaging/arch/pkg/
+packaging/arch/src/
+packaging/arch/*.pkg.tar.zst
+packaging/arch/*.pkg.tar.zst.sig
+packaging/arch/*.log
+resources/original/img/tray/
+resources/themed/img/tray-dark-outline-v7/

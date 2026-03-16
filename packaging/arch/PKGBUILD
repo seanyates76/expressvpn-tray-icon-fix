@@ -1,0 +1,66 @@
+pkgname=expressvpn-tray-icon-fix
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='Improved ExpressVPN tray icons with live light/dark theme switching'
+arch=('x86_64')
+# Local-tree packaging only. Replace source=() and sha256sums=() before AUR publication.
+url='https://github.com/seanyates76/expressvpn-tray-icon-fix'
+license=('MIT')
+depends=('bash')
+optdepends=('expressvpn: target VPN client binary at /opt/expressvpn/bin/expressvpn-client')
+makedepends=('imagemagick' 'qt6-base' 'qt6-declarative')
+install="$pkgname.install"
+options=('!debug')
+source=()
+sha256sums=()
+
+_repo_root="$(cd "$startdir/../.." && pwd)"
+
+build() {
+  cd "$_repo_root"
+  make override-preload
+  ./scripts/build_tray_variants.sh
+}
+
+package() {
+  cd "$_repo_root"
+
+  local runtime_root="$pkgdir/usr/lib/$pkgname"
+  ./scripts/stage-package-runtime.sh "$runtime_root"
+
+  install -Dm755 \
+    packaging/bin/expressvpn-tray-icon-fix \
+    "$pkgdir/usr/bin/expressvpn-tray-icon-fix"
+
+  install -Dm755 \
+    packaging/bin/expressvpn-tray-icon-fix-integrate \
+    "$pkgdir/usr/bin/expressvpn-tray-icon-fix-integrate"
+
+  install -Dm644 \
+    packaging/desktop/expressvpn-tray-icon-fix.desktop \
+    "$pkgdir/usr/share/applications/expressvpn-tray-icon-fix.desktop"
+
+  install -Dm644 \
+    packaging/man/expressvpn-tray-icon-fix.1 \
+    "$pkgdir/usr/share/man/man1/expressvpn-tray-icon-fix.1"
+
+  install -Dm644 \
+    packaging/man/expressvpn-tray-icon-fix-integrate.1 \
+    "$pkgdir/usr/share/man/man1/expressvpn-tray-icon-fix-integrate.1"
+
+  install -Dm644 \
+    README.md \
+    "$pkgdir/usr/share/doc/$pkgname/README.md"
+
+  install -Dm644 \
+    docs/variant-options.md \
+    "$pkgdir/usr/share/doc/$pkgname/variant-options.md"
+
+  install -Dm644 \
+    packaging/arch/README.md \
+    "$pkgdir/usr/share/doc/$pkgname/arch-packaging.md"
+
+  install -Dm644 \
+    LICENSE \
+    "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

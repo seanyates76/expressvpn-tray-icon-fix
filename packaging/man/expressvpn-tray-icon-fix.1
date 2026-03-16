@@ -1,0 +1,49 @@
+.TH EXPRESSVPN-TRAY-ICON-FIX 1 "2026-03-15" "expressvpn-tray-icon-fix 0.1.0" "User Commands"
+.SH NAME
+expressvpn-tray-icon-fix \- launch ExpressVPN with improved live-switching tray icons
+.SH SYNOPSIS
+.B expressvpn-tray-icon-fix
+[\fB--style\fR \fISTYLE\fR]
+[\fB--set-style\fR \fISTYLE\fR]
+[\fB--print-style\fR]
+[\fB--foreground\fR]
+[\fB-h\fR|\fB--help\fR]
+[\fB--\fR [\fIEXPRESSVPN_ARGS\fR ...]]
+.SH DESCRIPTION
+.B expressvpn-tray-icon-fix
+launches the ExpressVPN GUI client with a preload hook and themed tray icon
+assets. The tray icon follows the current system light or dark theme and can be
+used with colored or monochrome status indicators.
+.PP
+When the package is installed through pacman, it attempts to enable itself for
+the invoking user by creating user-local overrides for the standard
+\fBexpressvpn.desktop\fR launcher and the ExpressVPN autostart entry.
+.SH OPTIONS
+.TP
+.B --style STYLE
+Persist \fISTYLE\fR and launch ExpressVPN. Accepted values are \fBcolored\fR and
+\fBmonochrome\fR.
+.TP
+.B --set-style STYLE
+Persist \fISTYLE\fR and exit without launching ExpressVPN.
+.TP
+.B --print-style
+Print the effective style and exit.
+.TP
+.B --foreground
+Run ExpressVPN attached to the current terminal instead of backgrounding it.
+.TP
+.B -h, --help
+Show a short usage message and exit.
+.SH FILES
+.TP
+.I ~/.config/expressvpn-tray-icon-fix/style
+Persisted style choice for the current user.
+.TP
+.I ~/.local/share/applications/expressvpn.desktop
+Managed desktop override installed by package integration.
+.TP
+.I ~/.config/autostart/expressvpn-client.desktop
+Managed autostart override installed by package integration.
+.SH SEE ALSO
+.BR expressvpn-tray-icon-fix-integrate (1)

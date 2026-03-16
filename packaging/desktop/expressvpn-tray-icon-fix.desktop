@@ -1,0 +1,21 @@
+[Desktop Entry]
+Type=Application
+Name=ExpressVPN Tray Icon Fix
+Comment=ExpressVPN launcher with improved live-switching tray icons
+Path=/opt/expressvpn/bin/
+Exec=/usr/bin/expressvpn-tray-icon-fix %u
+Icon=expressvpn
+Terminal=false
+Categories=Network
+StartupWMClass=expressvpn-client
+MimeType=x-scheme-handler/expressvpn
+NoDisplay=true
+Actions=Colored;Monochrome;
+
+[Desktop Action Colored]
+Name=Launch With Colored Indicators
+Exec=/usr/bin/expressvpn-tray-icon-fix --style colored %u
+
+[Desktop Action Monochrome]
+Name=Launch With Monochrome Indicators
+Exec=/usr/bin/expressvpn-tray-icon-fix --style monochrome %u

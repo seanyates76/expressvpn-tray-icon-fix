@@ -1,0 +1,189 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+runtime_root="/usr/lib/expressvpn-tray-icon-fix"
+app_path="/opt/expressvpn/bin/expressvpn-client"
+config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
+cache_home="${XDG_CACHE_HOME:-$HOME/.cache}"
+settings_path="$config_home/expressvpn/clientsettings.json"
+style_config_path="$config_home/expressvpn-tray-icon-fix/style"
+log_path="$cache_home/expressvpn-tray-icon-fix/launcher.log"
+
+print_usage() {
+  cat <<'EOF'
+Usage:
+  expressvpn-tray-icon-fix [options] [-- <expressvpn args>]
+
+Options:
+  --style STYLE        Persist STYLE and launch. STYLE: colored | monochrome
+  --set-style STYLE    Persist STYLE and exit.
+  --print-style        Print the effective persisted/default style and exit.
+  --foreground         Launch in the current terminal instead of backgrounding.
+  -h, --help           Show this help.
+EOF
+}
+
+write_style_config() {
+  local style="$1"
+  mkdir -p "$(dirname "$style_config_path")"
+  printf '%s\n' "$style" > "$style_config_path"
+}
+
+detect_system_icon_set() {
+  local system_theme_path path
+  system_theme_path="${EXPRESSVPN_TRAY_SYSTEM_THEME_FILE:-}"
+
+  for path in \
+    "$system_theme_path" \
+    "$config_home/xsettingsd/xsettingsd.conf" \
+    "$config_home/kdeglobals" \
+    "$config_home/gtk-3.0/settings.ini" \
+    "$config_home/gtk-4.0/settings.ini"; do
+    [[ -n "$path" && -f "$path" ]] || continue
+
+    if grep -qiE 'gtk-application-prefer-dark-theme *= *true|^(Net/ThemeName|Net/IconThemeName) .*dark|^gtk-icon-theme-name=.*dark|^(gtk-theme-name|LookAndFeelPackage|ColorScheme)=.*dark' "$path"; then
+      printf 'dark\n'
+      return 0
+    fi
+
+    if grep -qiE 'gtk-application-prefer-dark-theme *= *false|^(Net/ThemeName|Net/IconThemeName) ".*breeze"|^gtk-icon-theme-name=breeze$|^(LookAndFeelPackage|ColorScheme)=.*light' "$path"; then
+      printf 'light\n'
+      return 0
+    fi
+  done
+
+  printf 'light\n'
+}
+
+select_style() {
+  local raw
+  raw="${EXPRESSVPN_TRAY_ICON_FIX_STYLE:-}"
+  if [[ -z "$raw" && -f "$style_config_path" ]]; then
+    raw="$(<"$style_config_path")"
+  fi
+
+  case "${raw,,}" in
+    monochrome)
+      printf 'monochrome\n'
+      ;;
+    *)
+      printf 'colored\n'
+      ;;
+  esac
+}
+
+foreground=0
+persist_only=0
+style_override=""
+passthrough_args=()
+
+while (($#)); do
+  case "$1" in
+    --style)
+      shift
+      [[ $# -gt 0 ]] || { echo "Missing value for --style" >&2; exit 1; }
+      style_override="$1"
+      ;;
+    --style=*)
+      style_override="${1#*=}"
+      ;;
+    --set-style)
+      persist_only=1
+      shift
+      [[ $# -gt 0 ]] || { echo "Missing value for --set-style" >&2; exit 1; }
+      style_override="$1"
+      ;;
+    --set-style=*)
+      persist_only=1
+      style_override="${1#*=}"
+      ;;
+    --print-style)
+      select_style
+      exit 0
+      ;;
+    --foreground)
+      foreground=1
+      ;;
+    -h|--help)
+      print_usage
+      exit 0
+      ;;
+    --)
+      shift
+      passthrough_args+=("$@")
+      break
+      ;;
+    *)
+      passthrough_args+=("$1")
+      ;;
+  esac
+  shift || true
+done
+
+if [[ -n "$style_override" ]]; then
+  case "${style_override,,}" in
+    colored|monochrome)
+      write_style_config "${style_override,,}"
+      ;;
+    *)
+      echo "Invalid style: $style_override" >&2
+      echo "Expected: colored or monochrome" >&2
+      exit 1
+      ;;
+  esac
+fi
+
+if [[ "$persist_only" -eq 1 ]]; then
+  exit 0
+fi
+
+style="$(select_style)"
+style_root="$runtime_root/styles/$style"
+preload_path="$runtime_root/lib/libexpressvpn-tray-override.so"
+rcc_path="$style_root/override.rcc"
+rcc_dark_path="$style_root/override-dark.rcc"
+rcc_light_path="$style_root/override-light.rcc"
+asset_root="$style_root/assets"
+
+for required in \
+  "$app_path" \
+  "$preload_path" \
+  "$rcc_path" \
+  "$rcc_dark_path" \
+  "$rcc_light_path"; do
+  if [[ ! -e "$required" ]]; then
+    echo "Missing required file: $required" >&2
+    exit 1
+  fi
+done
+
+system_icon_set="$(detect_system_icon_set)"
+if [[ -f "$settings_path" ]]; then
+  tmp_settings="$(mktemp)"
+  sed -E "s/\"iconSet\":\"[^\"]+\"/\"iconSet\":\"$system_icon_set\"/" "$settings_path" > "$tmp_settings"
+  mv "$tmp_settings" "$settings_path"
+fi
+
+app_size="$(stat -c '%s' "$app_path")"
+app_mtime="$(stat -c '%Y' "$app_path")"
+
+export TRAY_OVERRIDE_RCC="$rcc_path"
+export TRAY_OVERRIDE_RCC_DARK="$rcc_dark_path"
+export TRAY_OVERRIDE_RCC_LIGHT="$rcc_light_path"
+export TRAY_OVERRIDE_ASSET_ROOT="$asset_root"
+export EXPRESSVPN_TRAY_SYNC_ICONSET=1
+export EXPRESSVPN_TRAY_SYNC_APP_SIZE="$app_size"
+export EXPRESSVPN_TRAY_SYNC_APP_MTIME="$app_mtime"
+if [[ -n "${EXPRESSVPN_TRAY_SYSTEM_THEME_FILE:-}" ]]; then
+  export EXPRESSVPN_TRAY_SYSTEM_THEME_FILE
+fi
+export LD_PRELOAD="$preload_path${LD_PRELOAD:+:${LD_PRELOAD}}"
+
+if [[ "$foreground" -eq 1 || ! -t 1 ]]; then
+  exec env XDG_SESSION_TYPE=X11 "$app_path" "${passthrough_args[@]}"
+fi
+
+mkdir -p "$(dirname "$log_path")"
+nohup env XDG_SESSION_TYPE=X11 "$app_path" "${passthrough_args[@]}" >"$log_path" 2>&1 &
+printf 'Launched ExpressVPN Tray Icon Fix in background.\n'
+printf 'Log: %s\n' "$log_path"

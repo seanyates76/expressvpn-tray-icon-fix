@@ -1,0 +1,15 @@
+Embedded ExpressVPN tray resources
+Source binary: /opt/expressvpn/bin/expressvpn-client
+
+img/tray/square-dark-no-outline-margins-alert.png
+img/tray/square-dark-no-outline-margins-connected.png
+img/tray/square-dark-no-outline-margins-connecting.png
+img/tray/square-dark-no-outline-margins-disconnecting.png
+img/tray/square-dark-no-outline-margins-down.png
+img/tray/square-dark-no-outline-margins-snoozed.png
+img/tray/square-light-no-outline-margins-alert.png
+img/tray/square-light-no-outline-margins-connected.png
+img/tray/square-light-no-outline-margins-connecting.png
+img/tray/square-light-no-outline-margins-disconnecting.png
+img/tray/square-light-no-outline-margins-down.png
+img/tray/square-light-no-outline-margins-snoozed.png

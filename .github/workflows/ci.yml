@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  arch-package:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+
+    steps:
+      - name: Install build dependencies
+        run: pacman -Sy --noconfirm --needed base-devel git imagemagick pkgconf qt6-base qt6-declarative
+
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Syntax checks
+        shell: bash
+        run: |
+          bash -n packaging/bin/expressvpn-tray-icon-fix
+          bash -n packaging/bin/expressvpn-tray-icon-fix-integrate
+          sh -n packaging/arch/expressvpn-tray-icon-fix.install
+          bash -n scripts/*.sh
+
+      - name: Regenerate SRCINFO
+        shell: bash
+        run: make srcinfo
+
+      - name: Build Arch package
+        shell: bash
+        run: make package-arch
