@@ -11,6 +11,19 @@ Current scope:
 - Linux runtime mod
 - compatibility tracked by tested combinations only
 
+## Preview
+
+<table>
+  <tr>
+    <th>Before</th>
+    <th>After</th>
+  </tr>
+  <tr>
+    <td><img src="docs/assets/Before.png" alt="Original ExpressVPN tray icon" width="576"></td>
+    <td><img src="docs/assets/After.png" alt="Improved ExpressVPN tray icon" width="576"></td>
+  </tr>
+</table>
+
 ## Install
 
 ### Arch Linux
